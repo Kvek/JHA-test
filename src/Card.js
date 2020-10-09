@@ -6,12 +6,14 @@ const CardContainer = styled.div`
   flex-direction: column;
   box-shadow: 0px 0px 3px -1px rgba(0, 0, 0, 0.5);
   max-width: 350px;
-  width: 350px;
+  min-width: calc(100% - 65px);
+  margin: 1em;
   height: 175px;
   justify-content: space-evenly;
   position: relative;
   padding: 75px 20px 20px;
   background: rgba(0, 0, 0, 0.05);
+  margin: 1em;
 
   td {
     display: block;

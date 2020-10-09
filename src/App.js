@@ -1,19 +1,36 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, gql } from '@apollo/client';
 import styled from '@emotion/styled';
 import Card from './Card';
 
 const AppContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(375px, 1fr));
-  justify-items: center;
-  grid-gap: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   height: 100%;
-  scrollbar-width: 0;
   padding: 5em;
 `;
 
+const LoadingContainer = styled.div`
+  height: 100px;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+`;
+
 function App() {
+  const [cardList, setCardList] = useState([]);
+  const loaderRef = useRef(null);
+  const [hideLoader, setHideLoader] = useState(false);
+
+  const [maxIndex, setMaxIndex] = useState(0);
+
+  let options = {
+    rootMargin: '500px',
+    threshold: 0
+  };
+
   const { loading, data } = useQuery(gql`
     query {
       Country {
@@ -36,31 +53,65 @@ function App() {
     }
   `);
 
-  if (loading) return <p>Loading...</p>;
+  let observer = new IntersectionObserver((e) => {
+    if (maxIndex < data?.Country.length) {
+      if (e[0]?.isIntersecting) {
+        setMaxIndex((prevState) => prevState + 10);
+      }
+    } else {
+      setHideLoader(true);
+    }
+  }, options);
+
+  const setRef = (ref) => {
+    if (ref) {
+      observer.observe(ref);
+      return (loaderRef.current = ref);
+    }
+  };
+
+  useEffect(() => {
+    if (!loading) {
+      setCardList(data?.Country.slice(0, 20));
+    }
+  }, [data, loading]);
+
+  useEffect(() => {
+    setCardList(data?.Country.slice(0, maxIndex));
+  }, [data, maxIndex]);
+
+  if (loading)
+    return (
+      <LoadingContainer>
+        <p>Loading...</p>
+      </LoadingContainer>
+    );
 
   return (
     <AppContainer>
-      {data?.Country.map(
-        ({
-          name,
-          nativeName,
-          population,
-          capital,
-          flag,
-          officialLanguages
-        }) => (
-          <Card
-            name={name}
-            nativeName={nativeName}
-            population={population}
-            capital={capital}
-            flag={flag?.svgFile}
-            languages={officialLanguages}
-            key={name}
-          />
+      {cardList?.map(
+        (
+          { name, nativeName, population, capital, flag, officialLanguages },
+          index
+        ) => (
+          <span index={index}>
+            <Card
+              name={name}
+              nativeName={nativeName}
+              population={population}
+              capital={capital}
+              flag={flag?.svgFile}
+              languages={officialLanguages}
+              key={name}
+            />
+          </span>
         )
       )}
-      ;
+      {!hideLoader && (
+        <LoadingContainer ref={(ref) => setRef(ref)}>
+          <p>Loading...</p>
+        </LoadingContainer>
+      )}
     </AppContainer>
   );
 }
